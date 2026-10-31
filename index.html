@@ -149,6 +149,8 @@ button:focus-visible{outline:3px solid #FFC53D;outline-offset:3px}
 @keyframes dcmgspin{from{transform:rotate(0)}to{transform:rotate(360deg)}}
 @keyframes dcmgfade{from{opacity:0}to{opacity:1}}
 @keyframes dcmgfall{0%{transform:translateY(-40px) rotate(0);opacity:1}100%{transform:translateY(1200px) rotate(900deg);opacity:1}}
+@keyframes dcbulbout{0%{transform:scale(1.25);filter:brightness(2)}25%{transform:scale(.8) rotate(-12deg)}50%{transform:scale(1.1) rotate(10deg)}75%{transform:scale(.92) rotate(-5deg)}100%{transform:none}}
+@keyframes dcbulbglow{0%,100%{filter:drop-shadow(0 0 7px rgba(255,214,70,0.85))}50%{filter:drop-shadow(0 0 15px rgba(255,214,70,1))}}
 @keyframes dcmgwin{0%{transform:scale(.1) rotate(-8deg);opacity:0;filter:blur(14px)}55%{transform:scale(1.16) rotate(2deg);opacity:1;filter:blur(0)}75%{transform:scale(.96)}100%{transform:scale(1);opacity:1}}
 @keyframes dcmgwinglow{0%,100%{filter:drop-shadow(0 0 22px rgba(255,214,90,.9))}50%{filter:drop-shadow(0 0 52px rgba(255,120,200,1))}}
 @keyframes dcmgout{0%{clip-path:circle(80% at 50% 50%);transform:rotate(0) scale(1);filter:brightness(1)}55%{filter:brightness(1.5) saturate(1.3)}100%{clip-path:circle(0% at 50% 50%);transform:rotate(110deg) scale(.55);filter:brightness(2.2) saturate(1.5)}}
@@ -1374,6 +1376,11 @@ body:has(.pvon) .fl,body:has(.pvon) .blob,body:has(.pvon) .floor{display:none}
 </div></div>
 </div>
 </div>
+<div style="display: flex; align-items: center; justify-content: center; gap: 22px" role="img" aria-label="{{vBulbLabel}}">
+<sc-for list="{{vBulbs}}" as="bb" hint-placeholder-count="3">
+<div style="{{bb.style}}"><svg width="44" height="54" viewBox="0 0 44 54" aria-hidden="true"><path d="M22 3C12 3 5 10.5 5 20c0 6.5 3.2 10.4 6.2 13.6 1.7 1.8 2.8 3.7 2.8 6.4h16c0-2.7 1.1-4.6 2.8-6.4C35.800 30.400 39 26.500 39 20 39 10.500 32 3 22 3z" fill="{{bb.fill}}" stroke="{{bb.stroke}}" stroke-width="2.500"></path><rect x="14" y="42" width="16" height="4.500" rx="2" fill="{{bb.base}}"></rect><rect x="16.500" y="47.500" width="11" height="4" rx="2" fill="{{bb.base}}"></rect><path d="M17 17c1-3 3.500-5 6-5" fill="none" stroke="{{bb.shine}}" stroke-width="2.500" stroke-linecap="round"></path></svg></div>
+</sc-for>
+</div>
 <div style="height: 22px; border-radius: 999px; background: rgba(255,255,255,0.2); border: 3px solid #FFFFFF; overflow: hidden; box-shadow: 0 6px 18px rgba(0,0,0,0.35)"><div style="{{vBar}}"></div></div>
 </div>
 <sc-if value="{{vCd3}}" hint-placeholder-val="{{ false }}"><div style="position: absolute; left: 0; top: 0; width: 1090px; height: 1090px; display: flex; align-items: center; justify-content: center; pointer-events: none; z-index: 4"><div class="bungee" style="font-size: 520px; line-height: 1; color: rgba(255,255,255,0.6); text-shadow: 0 0 60px rgba(160,120,255,0.9), 0 0 120px rgba(255,80,200,0.6); animation: dcmgcd 1s ease-out both">3</div></div></sc-if>
@@ -1394,7 +1401,7 @@ body:has(.pvon) .fl,body:has(.pvon) .blob,body:has(.pvon) .floor{display:none}
 </div>
 </div></sc-if>
 <sc-if value="{{vLose}}" hint-placeholder-val="{{ false }}"><div style="position: absolute; left: 0; top: 0; width: 1090px; height: 1090px; z-index: 6; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 16px; background: rgba(12,4,30,0.86); animation: dcmgfade .35s both">
-<div class="bungee" style="font-size: 120px; line-height: 1; color: #FF5A5A; text-shadow: 0 0 40px rgba(255,60,60,0.8), 4px 4px 0 #5A0A18; animation: dcmgwin .7s cubic-bezier(.2,1.2,.3,1) both">TIME'S UP</div>
+<div class="bungee" style="font-size: 120px; line-height: 1; color: #FF5A5A; text-shadow: 0 0 40px rgba(255,60,60,0.8), 4px 4px 0 #5A0A18; animation: dcmgwin .7s cubic-bezier(.2,1.2,.3,1) both">{{vLoseTitle}}</div>
 <div style="font-size: 30px; font-weight: 800; color: #FFFFFF; animation: dcmgfade .5s .4s both">{{vLoseMsg}}</div>
 </div></sc-if>
 </div>
@@ -4918,7 +4925,7 @@ class Component extends DCLogic {
     this.sfxUi('pick', i + 2);
     const meta = this.miniMeta()[i];
     const dur = meta[2];
-    this.setState({ mini: { ...this.state.mini, phase: 'view', pick: i, found: [], status: 'count', cd: 3, run: ((this.state.mini.run || 0) + 1) } });
+    this.setState({ mini: { ...this.state.mini, phase: 'view', pick: i, found: [], status: 'count', cd: 3, miss: 0, why: '', run: ((this.state.mini.run || 0) + 1) } });
     const at = (ms, fn) => this._mtm.push(setTimeout(fn, ms));
     this.sfxMini('cd', 3);
     // นับถอยหลัง 3 2 1 แล้วค่อยเริ่มเล่น
@@ -4969,14 +4976,21 @@ class Component extends DCLogic {
     const m = this.state.mini;
     if (!m || m.status !== 'play') return;
     if (Date.now() - (this._hitAt || 0) < 80) return;
+    // กดพลาดได้ 3 ครั้ง (หลอดไฟ 3 ดวง) ครบแล้วแพ้ทันที
+    const miss = (m.miss || 0) + 1;
+    if (miss >= 3) {
+      this.miniEnd('lost', 'bulb', { miss: 3 });
+      return;
+    }
+    this.setState({ mini: { ...m, miss } });
     this.sfxMini('miss');
   }
 
-  miniEnd(st) {
+  miniEnd(st, why, extra) {
     const m = this.state.mini;
     if (!m || m.status !== 'play') return;
     this.miniClear();
-    this.setState({ mini: { ...m, status: st } });
+    this.setState({ mini: { ...m, ...(extra || {}), status: st, why: why || '' } });
     this.sfxMini(st === 'won' ? 'win' : 'lose');
     this._mtm.push(setTimeout(() => this.miniLeave(), st === 'won' ? 2200 : 1750));
     this._mtm.push(setTimeout(() => this.miniExit(), st === 'won' ? 3050 : 2600));
@@ -5055,7 +5069,7 @@ class Component extends DCLogic {
     if (!(m && m.leaving)) this.sfxUi('start');
     let note = 'เล่นมินิเกมจับผิดภาพแล้ว';
     if (m && m.status === 'won') note = 'ชนะมินิเกมจับผิดภาพ';
-    else if (m && m.status === 'lost') note = 'แพ้มินิเกมจับผิดภาพ (หมดเวลา)';
+    else if (m && m.status === 'lost') note = m.why === 'bulb' ? 'แพ้มินิเกมจับผิดภาพ (กดพลาดครบ 3 ครั้ง)' : 'แพ้มินิเกมจับผิดภาพ (หมดเวลา)';
     const last = st.last ? { ...st.last, note } : st.last;
     this.setState({ mini: null, last });
   }
@@ -5155,7 +5169,7 @@ class Component extends DCLogic {
   }
 
   miniPlayVals(m, pg) {
-    if (!pg) return { vZones: [], vMarks: [], vMsg: '', vMsgStyle: '', vBar: '', vOver: false, vMiss: () => {}, vCd3: false, vCd2: false, vCd1: false, vWin: false, vLose: false, vConf: [], vWinMsg: '', vLoseMsg: '' };
+    if (!pg) return { vZones: [], vMarks: [], vMsg: '', vMsgStyle: '', vBar: '', vOver: false, vMiss: () => {}, vCd3: false, vCd2: false, vCd1: false, vWin: false, vLose: false, vConf: [], vWinMsg: '', vLoseMsg: '', vLoseTitle: '', vBulbs: [], vBulbLabel: '' };
     const ZS = this.miniZones()[pg.key];
     const found = m.found || [];
     const need = pg.n;
@@ -5183,12 +5197,23 @@ class Component extends DCLogic {
     let col = '#F0E8FF';
     if (st === 'count') msg = 'เตรียมตัว… ' + need + ' จุด';
     if (st === 'won') { msg = 'เก่งมาก! เจอครบ ' + need + ' จุดแล้ว'; col = '#7CFFA1'; }
-    if (st === 'lost') { msg = 'หมดเวลา! เจอ ' + found.length + ' / ' + need + ' จุด'; col = '#FF8A80'; }
+    if (st === 'lost') { msg = (m.why === 'bulb' ? 'หลอดไฟดับหมด! เจอ ' : 'หมดเวลา! เจอ ') + found.length + ' / ' + need + ' จุด'; col = '#FF8A80'; }
     const bar = 'height:100%;width:100%;transform-origin:left center;background-color:#2ED573;animation:dcmgbar ' + dur + 's linear both,dcmgcol ' + dur + 's linear both;animation-play-state:' + (st === 'play' ? 'running' : 'paused') + ';';
     return {
       vCd3: st === 'count' && m.cd === 3, vCd2: st === 'count' && m.cd === 2, vCd1: st === 'count' && m.cd === 1,
       vWin: st === 'won', vLose: st === 'lost', vConf: this._mconf,
-      vWinMsg: 'เจอครบ ' + need + ' จุด', vLoseMsg: 'หมดเวลา! เจอ ' + found.length + ' / ' + need + ' จุด · กำลังกลับสู่กระดาน',
+      vWinMsg: 'เจอครบ ' + need + ' จุด',
+      vLoseTitle: m.why === 'bulb' ? 'GAME OVER' : "TIME'S UP",
+      vLoseMsg: (m.why === 'bulb' ? 'กดพลาดครบ 3 ครั้ง! เจอ ' : 'หมดเวลา! เจอ ') + found.length + ' / ' + need + ' จุด · กำลังกลับสู่กระดาน',
+      vBulbs: [0, 1, 2].map((i) => {
+        const on = i >= (m.miss || 0);
+        const justOff = !on && i === (m.miss || 0) - 1;
+        return {
+          fill: on ? '#FFE066' : '#4A4466', stroke: on ? '#FFF6C2' : '#6C6590', base: on ? '#C9D1DC' : '#5A5478', shine: on ? '#FFFFFF' : 'rgba(255,255,255,0.15)',
+          style: 'display:flex;line-height:0;' + (on ? 'animation:dcbulbglow 1.8s ease-in-out infinite;' : (justOff ? 'animation:dcbulbout .6s ease-out both;' : 'opacity:0.85;'))
+        };
+      }),
+      vBulbLabel: 'โอกาสกดพลาดเหลือ ' + (3 - (m.miss || 0)) + ' จาก 3 ครั้ง',
       vZones: zones, vMarks: marks, vMsg: msg, vBar: bar, vOver: st === 'won' || st === 'lost',
       vMsgStyle: 'font-size:24px;font-weight:800;color:' + col + ';min-height:32px;',
       vMiss: () => this.miniMiss()
